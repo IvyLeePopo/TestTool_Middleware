@@ -22,6 +22,7 @@ enum PROVINCE_TYPE
 {
 	Jiangxi = 1,
 	HeNan = 2,
+	SiChuan = 3,
 };
 
 
@@ -135,7 +136,9 @@ private:
 	void loadDll();//普通不带特情的中间件
 	void loadDllEvent();//带特情处理的中间件
 	void loadDllRobot();//卡机的移动支付
-	bool initSucceed();
+	bool loadDllSucceed();//加载中间件是否成功
+	bool initNetPayEnvSucceed();//初始化移动支付是否成功
+	bool initEtcEventEnvSucceed();//初始化特情环境是否成功
 	CString GetCurrentDirNew();
 	void GetUIDebitInfo();
 	const CString guid(IN const int iType = 1);
@@ -168,9 +171,9 @@ private:
 private:
 	CEdit edt_info;
 	HMODULE gd_dll;
-	bool m_bLoaded;
-	bool m_bNetPayEnvInitedFlag;
-	bool m_bEtcEventEnvInitedFlag;
+	bool m_bLoaded;//加载中间件动态库
+	bool m_bNetPayEnvInitedFlag;//初始化移动支付的环境
+	bool m_bEtcEventEnvInitedFlag;//初始化特情环境
 
 	///////////////////////// 特情相关//////////////////////////////////////////////////////////////////
 	IF_EventInitEnvironment3		fn_EventInitEnvironment3;

@@ -63,8 +63,11 @@ CTestToolDlg::CTestToolDlg(CWnd* pParent /*=NULL*/)
 
 	m_bLoaded = false;
 	ReceiveMsgThreadID = 0;
-	m_enCurProvince = PROVINCE_TYPE::Jiangxi;
-	m_enMidllewareType = MIDLLEWARE_TYPE::BaseNoEvent;
+	//m_enCurProvince = PROVINCE_TYPE::Jiangxi;
+	//m_enMidllewareType = MIDLLEWARE_TYPE::BaseNoEvent;
+
+	m_enCurProvince = PROVINCE_TYPE::SiChuan;
+	m_enMidllewareType = MIDLLEWARE_TYPE::RobotNoEvent;
 
 	m_pGuiPlay1Thread = NULL;
 	m_pGuiPlay2Thread = NULL;
@@ -313,7 +316,7 @@ void CTestToolDlg::log(std::string str)
 
 void CTestToolDlg::loadDll()
 {
-	log("开始加载TWSDNetPay.dll库...... \n");
+	log("开始加载TWSDNetPay.dll库...（基础没有特情处理）\n");
 
 	fn_EventInitEnvironment3 = NULL;
 
@@ -382,7 +385,7 @@ void CTestToolDlg::loadDll()
 
 void CTestToolDlg::loadDllEvent()
 {
-	log("开始加载TWSDNetPay.dll库...... \n");
+	log("开始加载TWSDNetPay.dll库...（基础+特情处理）\n");
 
 	fn_EventInitEnvironment3 = NULL;
 	fn_EventDestroy = NULL;
@@ -509,9 +512,7 @@ void CTestToolDlg::loadDllEvent()
 
 void CTestToolDlg::loadDllRobot()
 {
-	log("开始加载TWSDNetPay.dll库...... \n");
-
-	fn_EventInitEnvironment3 = NULL;
+	log("开始加载TWSDNetPay.dll库...（卡机的移动支付且没有特情的）\n");
 
 	fn_InitEnvironment = NULL;
 	fn_Destroy = NULL;
@@ -534,9 +535,6 @@ void CTestToolDlg::loadDllRobot()
 		log("load TWSDNetPay.dll失败!!! \n");
 		return;
 	}
-
-	// 特情相关
-	fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
 
 	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
 	fn_Destroy = (defIF_Destroy)::GetProcAddress(gd_dll, "IF_Destroy");
@@ -565,8 +563,7 @@ void CTestToolDlg::loadDllRobot()
 		fn_SetMMI == NULL ||
 		fn_GetParam == NULL ||
 		fn_GetComponentStatus == NULL ||
-		fn_TranslateData == NULL /*||
-								 fn_EventInitEnvironment3 == NULL*/)
+		fn_TranslateData == NULL)
 	{
 
 		log("加载TWSDNetPay.dll失败!!! \n");
@@ -577,28 +574,28 @@ void CTestToolDlg::loadDllRobot()
 	m_bLoaded = true;
 }
 
-bool CTestToolDlg::initSucceed()
+bool CTestToolDlg::loadDllSucceed()
 {
-	bool bRet = true;
-
-
-	if (m_bLoaded == false)
-	{
+	if (!m_bLoaded)
 		log("未加载共享库!");
-		bRet = false;
-	}
 
-#if ROOT_PAY
-	if (m_bNetPayEnvInitedFlag == false)
-#else
-	if (m_bNetPayEnvInitedFlag == false || m_bEtcEventEnvInitedFlag == false)
-#endif
-	{
-		log("未初始化支付环境！");
-		bRet = false;
-	}
+	return m_bLoaded;
+}
 
-	return bRet;
+bool CTestToolDlg::initNetPayEnvSucceed()
+{
+	if (!m_bNetPayEnvInitedFlag)
+		log("未初始化支付环境!");
+
+	return m_bNetPayEnvInitedFlag;
+}
+
+bool CTestToolDlg::initEtcEventEnvSucceed()
+{
+	if (!m_bEtcEventEnvInitedFlag)
+		log("未初始化特情环境!");
+
+	return m_bEtcEventEnvInitedFlag;
 }
 
 CString CTestToolDlg::GetCurrentDirNew()
@@ -1762,6 +1759,9 @@ void CTestToolDlg::OnBnClickedButtonLoaddll()
 	case HeNan:
 		log("加载河南移动支付中间件！！！");
 		break;
+	case SiChuan:
+		log("加载四川移动支付中间件！！！");
+		break;
 	default:
 		break;
 	}
@@ -1830,7 +1830,7 @@ void CTestToolDlg::OnBnClickedButtonInitnetpayenv()
 
 void CTestToolDlg::OnBnClickedBtndebit()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initNetPayEnvSucceed()))
 		return;
 
 	GetUIDebitInfo();
@@ -1896,7 +1896,7 @@ void CTestToolDlg::OnBnClickedBtndebit()
 
 void CTestToolDlg::OnBnClickedBtnCanceldebit()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initNetPayEnvSucceed()))
 		return;
 	
 	tagPayKeyItems* pPayKeyItems = new tagPayKeyItems();
@@ -1932,13 +1932,16 @@ void CTestToolDlg::OnBnClickedBtnNetpaydevstatus()
 
 void CTestToolDlg::OnBnClickedBtnInitenv()
 {
-	if (m_bLoaded == false)
+	if (m_enMidllewareType != MIDLLEWARE_TYPE::BaseAndEvent)
 	{
-		log("未加载共享库!");
+		log(_T("该中间件没有特情处理相关的接口，返回！！！"));
 		return;
 	}
 
-	if (m_bEtcEventEnvInitedFlag == true)
+	if (!loadDllSucceed())
+		return;
+
+	if (initEtcEventEnvSucceed())
 	{
 		log(_T("EtcEvent环境已初始化成功，请不要重复初始化!"));
 		return;
@@ -1993,24 +1996,15 @@ void CTestToolDlg::OnBnClickedBtnInitenv()
 	log("车道ID:" + m_laneId);
 	log("省份ID:" + std::to_string(m_provinceId));
 
-	bool bRet = fn_EventInitEnvironment3(ReceiveMsgThreadID, 0, WM_THREAD_ETCEVENT_MESSAGE_SHOWLOG, szAreaInfo, szLoaclStation, m_laneId.c_str(), szServerInfo, m_provinceId, pIndPtr, MyCallBackFun);
-
-	if (bRet)
-	{
-		log("ETC特情环境初始化成功!");
-		m_bEtcEventEnvInitedFlag = true;
-	}
-	else
-	{
-		log("ETC特情环境初始化失败!");
-		m_bEtcEventEnvInitedFlag = false;
-	}
+	m_bEtcEventEnvInitedFlag = fn_EventInitEnvironment3(ReceiveMsgThreadID, 0, WM_THREAD_ETCEVENT_MESSAGE_SHOWLOG, szAreaInfo, szLoaclStation, m_laneId.c_str(), szServerInfo, m_provinceId, pIndPtr, MyCallBackFun);
+	m_bEtcEventEnvInitedFlag?log("ETC特情环境初始化成功!"):log("ETC特情环境初始化失败!");
 }
 
 void CTestToolDlg::OnBnClickedBtnEventdestroy()
 {
-	if (!initSucceed())
+	if (!loadDllSucceed())
 		return;
+
 	bool bRet = fn_EventDestroy();
 	bRet ? log("ETC特情清理资源成功!") : log("ETC特情清理资源失败!");
 }
@@ -2018,7 +2012,7 @@ void CTestToolDlg::OnBnClickedBtnEventdestroy()
 
 void CTestToolDlg::OnBnClickedBtnEventstart()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2094,7 +2088,7 @@ void CTestToolDlg::OnBnClickedBtnEventstart()
 
 void CTestToolDlg::OnBnClickedBtnCheckvehqueue()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2160,7 +2154,7 @@ void CTestToolDlg::OnBnClickedBtnCheckvehqueue()
 
 void CTestToolDlg::OnBnClickedBtnCheckvehqueuedel()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2219,7 +2213,7 @@ void CTestToolDlg::OnBnClickedBtnCheckvehqueuedel()
 
 void CTestToolDlg::OnBnClickedBtnCheckvehinfo()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2288,8 +2282,9 @@ void CTestToolDlg::OnBnClickedBtnCheckvehinfo()
 
 void CTestToolDlg::OnBnClickedBtnCheckentryinfo()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -2367,7 +2362,7 @@ void CTestToolDlg::OnBnClickedBtnCheckentryinfo()
 
 void CTestToolDlg::OnBnClickedBtnCheckentryinfoNone()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2431,7 +2426,7 @@ void CTestToolDlg::OnBnClickedBtnCheckentryinfoNone()
 
 void CTestToolDlg::OnBnClickedBtnShowfeeinfosingle()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2526,7 +2521,7 @@ void CTestToolDlg::OnBnClickedBtnShowfeeinfosingle()
 
 void CTestToolDlg::OnBnClickedBtnShowfeeinfo()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2630,7 +2625,7 @@ void CTestToolDlg::OnBnClickedBtnShowfeeinfo()
 
 void CTestToolDlg::OnBnClickedBtnPayresultshow()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2684,7 +2679,7 @@ void CTestToolDlg::OnBnClickedBtnPayresultshow()
 
 void CTestToolDlg::OnBnClickedBtnPayresultshowfail()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2739,7 +2734,7 @@ void CTestToolDlg::OnBnClickedBtnPayresultshowfail()
 
 void CTestToolDlg::OnBnClickedBtnSwipecard()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2790,7 +2785,7 @@ void CTestToolDlg::OnBnClickedBtnSwipecard()
 
 void CTestToolDlg::OnBnClickedBtnRwcard()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2841,7 +2836,7 @@ void CTestToolDlg::OnBnClickedBtnRwcard()
 
 void CTestToolDlg::OnBnClickedBtnFixvehqueue()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2924,7 +2919,7 @@ void CTestToolDlg::OnBnClickedBtnFixvehqueue()
 
 void CTestToolDlg::OnBnClickedBtnFeeauthorize()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -2975,7 +2970,7 @@ void CTestToolDlg::OnBnClickedBtnFeeauthorize()
 
 void CTestToolDlg::OnBnClickedBtnAuthorize()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -3032,9 +3027,8 @@ void CTestToolDlg::OnBnClickedBtnAuthorize()
 
 void CTestToolDlg::OnBnClickedBtnDelvehqueueresult()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
-
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -3087,7 +3081,7 @@ void CTestToolDlg::OnBnClickedBtnDelvehqueueresult()
 
 void CTestToolDlg::OnBnClickedBtnEtcdevstatus()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	bool bRet = false;
@@ -3108,7 +3102,7 @@ void CTestToolDlg::OnBnClickedBtnEtcdevstatus()
 
 void CTestToolDlg::OnBnClickedBtnEtcgetlasterrordescrip()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	log("调用接口IF_EventGetLastErrorDesc()");
@@ -3122,7 +3116,7 @@ void CTestToolDlg::OnBnClickedBtnEtcgetlasterrordescrip()
 
 void CTestToolDlg::OnBnClickedBtnChange2etcmode()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -3161,7 +3155,7 @@ void CTestToolDlg::OnBnClickedBtnChange2etcmode()
 
 void CTestToolDlg::OnBnClickedBtnEventstop()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	CString strJson;
@@ -3231,7 +3225,7 @@ void CTestToolDlg::OnBnClickedBtnEventstop()
 
 void CTestToolDlg::OnBnClickedBtnDestroyetcevent()
 {
-	if (!initSucceed())
+	if (!initEtcEventEnvSucceed())
 		return;
 
 	log("卸载EtcEvent环境接口开始调用");
@@ -3251,20 +3245,11 @@ void CTestToolDlg::OnBnClickedBtnDestroyetcevent()
 
 void CTestToolDlg::OnBnClickedBtnDestroynetpay()
 {
-	//if (!initSucceed())
-	//	return;
-
-	if (m_bLoaded == false)
-	{
-		log("未加载共享库!");
+	if (!loadDllSucceed())
 		return;
-	}
 
-	if (m_bNetPayEnvInitedFlag == false )
-	{
-		log("未初始化支付环境！");
+	if (!initNetPayEnvSucceed())
 		return;
-	}
 
 	log("卸载移动支付环境接口开始调用");
 	bool bRet = false;
@@ -3284,11 +3269,8 @@ void CTestToolDlg::OnBnClickedBtnDestroynetpay()
 
 void CTestToolDlg::OnBnClickedBtnFreedll()
 {
-	if (m_bLoaded == false)
-	{
-		log("未加载共享库!");
+	if (!loadDllSucceed())
 		return;
-	}
 
 	//框架库中有一个线程不能通过接口调用退出，此处直接卸载dll会崩溃。
 	return;
@@ -3311,7 +3293,7 @@ void CTestToolDlg::OnBnClickedBtnFreedll()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay1start()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	//首先暂停其它两个线程的运行
@@ -3353,7 +3335,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay1start()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay1stop()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	if (m_bThread1Running == false)
@@ -3378,7 +3360,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay1stop()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay2start()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	//首先暂停其它两个线程的运行
@@ -3418,7 +3400,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay2start()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay2stop()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	if (m_bThread2Running == false)
@@ -3443,7 +3425,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay2stop()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay3start()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	//首先暂停其它两个线程的运行
@@ -3483,7 +3465,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay3start()
 
 void CTestToolDlg::OnBnClickedBtnGuiplay3stop()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	if (m_bThread3Running == false)
@@ -3507,7 +3489,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplay3stop()
 
 void CTestToolDlg::OnBnClickedBtnGuiplaytotalstart()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	//首先暂停其它两个线程的运行
@@ -3546,7 +3528,7 @@ void CTestToolDlg::OnBnClickedBtnGuiplaytotalstart()
 
 void CTestToolDlg::OnBnClickedBtnGuiplaytotalstop()
 {
-	if (!initSucceed())
+	if (!(loadDllSucceed() && initEtcEventEnvSucceed()))
 		return;
 
 	if (m_bThreadTotalRunning == false)
@@ -3577,6 +3559,21 @@ void CTestToolDlg::OnBnClickedBtnAsyncexeccmd()
 		return;
 	}
 
+	if (fn_AsyncExecCmd == NULL)
+		return;
+
+	Json::Value InvoiceAsyncExecCmd;
+	InvoiceAsyncExecCmd["CashInvoiceNo"] = Json::Value("33b2b009e44b15");
+	InvoiceAsyncExecCmd["SubTime"] = Json::Value(CTime::GetCurrentTime().Format(_T("%Y-%m-%d %H:%M:%S")));
+	InvoiceAsyncExecCmd["License"] = Json::Value("川A12345");
+	InvoiceAsyncExecCmd["EntryStationID"] = Json::Value("31121");
+	InvoiceAsyncExecCmd["EntryStationName"] = Json::Value("上海路段");
+	InvoiceAsyncExecCmd["EntryTime"] = Json::Value("");
+	InvoiceAsyncExecCmd["QRCodeUrl"] = Json::Value("");
+
+	bool ret = false;
+	//ret = fn_AsyncExecCmd(2001, );
+
 }
 
 
@@ -3589,5 +3586,9 @@ void CTestToolDlg::OnBnClickedBtnClearqrcodecmd()
 		return;
 	}
 
+	if (fn_AsyncExecCmd == NULL)
+		return;
 
+	bool ret = false;
+	//ret = fn_AsyncExecCmd(2002, );
 }
