@@ -56,6 +56,18 @@ int CTestToolDlg::No = 1000;
 int CTestToolDlg::VehPlateTail = 100;
 void* CTestToolDlg::m_pIndPtr = new char[2048];
 
+void MyNetPayCallBackFun(int iOption, int iResult, void* pIndPtr)
+{
+	int Option = iOption;
+	int Result = iResult;
+	char *ptr = (char *)pIndPtr;
+
+	//回调函数,暂时屏蔽
+	//g_DevIFDlg->m_pMainWnd->PostMessage(WM_THREAD_NETPAY_CALLBACK_SHOWLOG, (WPARAM)Option, (LPARAM)Result);
+
+	return;
+}
+
 CTestToolDlg::CTestToolDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CTestToolDlg::IDD, pParent)
 {
@@ -66,8 +78,8 @@ CTestToolDlg::CTestToolDlg(CWnd* pParent /*=NULL*/)
 	//m_enCurProvince = PROVINCE_TYPE::Jiangxi;
 	//m_enMidllewareType = MIDLLEWARE_TYPE::BaseNoEvent;
 
-	m_enCurProvince = PROVINCE_TYPE::SiChuan;
-	m_enMidllewareType = MIDLLEWARE_TYPE::RobotNoEvent;
+	m_enCurProvince = PROVINCE_TYPE::ShanXi;
+	m_enMidllewareType = MIDLLEWARE_TYPE::BaseAndEvent;
 
 	m_pGuiPlay1Thread = NULL;
 	m_pGuiPlay2Thread = NULL;
@@ -387,6 +399,21 @@ void CTestToolDlg::loadDllEvent()
 {
 	log("开始加载TWSDNetPay.dll库...（基础+特情处理）\n");
 
+	fn_InitEnvironment = NULL;
+	fn_InitEnvironment3 = NULL;
+	fn_Destroy = NULL;
+	fn_GetLastErrorDesc = NULL;
+	fn_StartGetAccountInfo = NULL;
+	fn_StopGetAccountInfo = NULL;
+	fn_GetAccountInfo = NULL;
+	fn_DebitMoney = NULL;
+	fn_DebitCancel = NULL;
+	fn_GetDebitResult = NULL;
+	fn_SetMMI = NULL;
+	fn_GetParam = NULL;
+	fn_GetComponentStatus = NULL;
+	fn_TranslateData = NULL;
+
 	fn_EventInitEnvironment3 = NULL;
 	fn_EventDestroy = NULL;
 	fn_EventGetLastErrorDesc = NULL;
@@ -407,20 +434,6 @@ void CTestToolDlg::loadDllEvent()
 	fn_EventDelVehQueueResult = NULL;
 	fn_EventFreeVoicePlay = NULL;
 
-	fn_InitEnvironment = NULL;
-	fn_Destroy = NULL;
-	fn_GetLastErrorDesc = NULL;
-	fn_StartGetAccountInfo = NULL;
-	fn_StopGetAccountInfo = NULL;
-	fn_GetAccountInfo = NULL;
-	fn_DebitMoney = NULL;
-	fn_DebitCancel = NULL;
-	fn_GetDebitResult = NULL;
-	fn_SetMMI = NULL;
-	fn_GetParam = NULL;
-	fn_GetComponentStatus = NULL;
-	fn_TranslateData = NULL;
-
 	gd_dll = ::LoadLibraryA("TWSDNetPay.dll");
 
 	if (gd_dll == NULL)
@@ -428,6 +441,23 @@ void CTestToolDlg::loadDllEvent()
 		log("load TWSDNetPay.dll fail!!! \n");
 		return;
 	}
+
+
+	// 中间业务库
+	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
+	fn_InitEnvironment3 = (defIF_InitEnvironment3)::GetProcAddress(gd_dll, "IF_InitEnvironment3");
+	fn_Destroy = (defIF_Destroy)::GetProcAddress(gd_dll, "IF_Destroy");
+	fn_GetLastErrorDesc = (defIF_GetLastErrorDesc)::GetProcAddress(gd_dll, "IF_GetLastErrorDesc");
+	fn_StartGetAccountInfo = (defIF_StartGetAccountInfo)::GetProcAddress(gd_dll, "IF_StartGetAccountInfo");
+	fn_StopGetAccountInfo = (defIF_StopGetAccountInfo)::GetProcAddress(gd_dll, "IF_StopGetAccountInfo");
+	fn_GetAccountInfo = (defIF_GetAccountInfo)::GetProcAddress(gd_dll, "IF_GetAccountInfo");
+	fn_DebitMoney = (defIF_DebitMoney)::GetProcAddress(gd_dll, "IF_DebitMoney");
+	fn_DebitCancel = (defIF_DebitCancel)::GetProcAddress(gd_dll, "IF_DebitCancel");
+	fn_GetDebitResult = (defIF_GetDebitResult)::GetProcAddress(gd_dll, "IF_GetDebitResult");
+	fn_SetMMI = (defIF_SetMMI)::GetProcAddress(gd_dll, "IF_SetMMI");
+	fn_GetParam = (defIF_GetParam)::GetProcAddress(gd_dll, "IF_GetParam");
+	fn_GetComponentStatus = (defIF_GetComponentStatus)::GetProcAddress(gd_dll, "IF_GetComponentStatus");
+	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
 
 	// 特情相关
 	fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
@@ -449,21 +479,6 @@ void CTestToolDlg::loadDllEvent()
 	fn_EventAuthorize = (IF_EventAuthorize)::GetProcAddress(gd_dll, "IF_EventAuthorize");
 	fn_EventDelVehQueueResult = (IF_EventDelVehQueueResult)::GetProcAddress(gd_dll, "IF_EventDelVehQueueResult");
 	//fn_EventFreeVoicePlay = (IF_EventFreeVoicePlay)::GetProcAddress(gd_dll, "IF_EventFreeVoicePlay");
-
-	// 中间业务库
-	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
-	fn_Destroy = (defIF_Destroy)::GetProcAddress(gd_dll, "IF_Destroy");
-	fn_GetLastErrorDesc = (defIF_GetLastErrorDesc)::GetProcAddress(gd_dll, "IF_GetLastErrorDesc");
-	fn_StartGetAccountInfo = (defIF_StartGetAccountInfo)::GetProcAddress(gd_dll, "IF_StartGetAccountInfo");
-	fn_StopGetAccountInfo = (defIF_StopGetAccountInfo)::GetProcAddress(gd_dll, "IF_StopGetAccountInfo");
-	fn_GetAccountInfo = (defIF_GetAccountInfo)::GetProcAddress(gd_dll, "IF_GetAccountInfo");
-	fn_DebitMoney = (defIF_DebitMoney)::GetProcAddress(gd_dll, "IF_DebitMoney");
-	fn_DebitCancel = (defIF_DebitCancel)::GetProcAddress(gd_dll, "IF_DebitCancel");
-	fn_GetDebitResult = (defIF_GetDebitResult)::GetProcAddress(gd_dll, "IF_GetDebitResult");
-	fn_SetMMI = (defIF_SetMMI)::GetProcAddress(gd_dll, "IF_SetMMI");
-	fn_GetParam = (defIF_GetParam)::GetProcAddress(gd_dll, "IF_GetParam");
-	fn_GetComponentStatus = (defIF_GetComponentStatus)::GetProcAddress(gd_dll, "IF_GetComponentStatus");
-	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
 
 	if (fn_EventInitEnvironment3 == NULL ||
 		fn_EventDestroy == NULL ||
@@ -509,7 +524,6 @@ void CTestToolDlg::loadDllEvent()
 	m_bLoaded = true;
 }
 
-
 void CTestToolDlg::loadDllRobot()
 {
 	log("开始加载TWSDNetPay.dll库...（卡机的移动支付且没有特情的）\n");
@@ -551,6 +565,136 @@ void CTestToolDlg::loadDllRobot()
 	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
 
 	if (fn_InitEnvironment == NULL ||
+		fn_Destroy == NULL ||
+		fn_GetLastErrorDesc == NULL ||
+		fn_StartGetAccountInfo == NULL ||
+		fn_StopGetAccountInfo == NULL ||
+		fn_GetAccountInfo == NULL ||
+		fn_GetLastErrorDesc == NULL ||
+		fn_DebitMoney == NULL ||
+		fn_DebitCancel == NULL ||
+		fn_GetDebitResult == NULL ||
+		fn_SetMMI == NULL ||
+		fn_GetParam == NULL ||
+		fn_GetComponentStatus == NULL ||
+		fn_TranslateData == NULL)
+	{
+
+		log("加载TWSDNetPay.dll失败!!! \n");
+		return;
+	}
+
+	log("加载TWSDNetPay.dll成功! \n");
+	m_bLoaded = true;
+}
+
+void CTestToolDlg::loadShanXiDll()
+{
+	log("开始加载（山西）TWSDNetPay.dll库...\n");
+
+	fn_InitEnvironment = NULL;
+	fn_InitEnvironment3 = NULL;
+	fn_Destroy = NULL;
+	fn_GetLastErrorDesc = NULL;
+	fn_StartGetAccountInfo = NULL;
+	fn_StopGetAccountInfo = NULL;
+	fn_GetAccountInfo = NULL;
+	fn_DebitMoney = NULL;
+	fn_DebitCancel = NULL;
+	fn_GetDebitResult = NULL;
+	fn_SetMMI = NULL;
+	fn_GetParam = NULL;
+	fn_GetComponentStatus = NULL;
+	fn_TranslateData = NULL;
+
+	fn_EventInitEnvironment3 = NULL;
+	fn_EventDestroy = NULL;
+	fn_EventGetLastErrorDesc = NULL;
+	fn_EventGetComponentStatus = NULL;
+	fn_EventDealStart = NULL;
+	fn_EventCheckVehQueue = NULL;
+	fn_EventCheckVehInfo = NULL;
+	fn_EventCheckEntryInfo = NULL;
+	fn_EventShowFeeInfo = NULL;
+	fn_EventPayResultDisplay = NULL;
+	fn_EventDealStop = NULL;
+	fn_EventStartScan = NULL;
+	fn_EventStopScan = NULL;
+	fn_EventCardOperationNotify = NULL;
+	fn_EventModifyVehQueue = NULL;
+	fn_EventFeeAuthorize = NULL;
+	fn_EventAuthorize = NULL;
+	fn_EventDelVehQueueResult = NULL;
+	fn_EventFreeVoicePlay = NULL;
+
+	gd_dll = ::LoadLibraryA("TWSDNetPay.dll");
+
+	if (gd_dll == NULL)
+	{
+		log("load TWSDNetPay.dll fail!!! \n");
+		return;
+	}
+
+
+	// 中间业务库
+	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
+	fn_InitEnvironment3 = (defIF_InitEnvironment3)::GetProcAddress(gd_dll, "IF_InitEnvironment3");
+	fn_Destroy = (defIF_Destroy)::GetProcAddress(gd_dll, "IF_Destroy");
+	fn_GetLastErrorDesc = (defIF_GetLastErrorDesc)::GetProcAddress(gd_dll, "IF_GetLastErrorDesc");
+	fn_StartGetAccountInfo = (defIF_StartGetAccountInfo)::GetProcAddress(gd_dll, "IF_StartGetAccountInfo");
+	fn_StopGetAccountInfo = (defIF_StopGetAccountInfo)::GetProcAddress(gd_dll, "IF_StopGetAccountInfo");
+	fn_GetAccountInfo = (defIF_GetAccountInfo)::GetProcAddress(gd_dll, "IF_GetAccountInfo");
+	fn_DebitMoney = (defIF_DebitMoney)::GetProcAddress(gd_dll, "IF_DebitMoney");
+	fn_DebitCancel = (defIF_DebitCancel)::GetProcAddress(gd_dll, "IF_DebitCancel");
+	fn_GetDebitResult = (defIF_GetDebitResult)::GetProcAddress(gd_dll, "IF_GetDebitResult");
+	fn_SetMMI = (defIF_SetMMI)::GetProcAddress(gd_dll, "IF_SetMMI");
+	fn_GetParam = (defIF_GetParam)::GetProcAddress(gd_dll, "IF_GetParam");
+	fn_GetComponentStatus = (defIF_GetComponentStatus)::GetProcAddress(gd_dll, "IF_GetComponentStatus");
+	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
+
+	// 特情相关
+	fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
+	fn_EventDestroy = (IF_EventDestroy)::GetProcAddress(gd_dll, "IF_EventDestroy");
+	fn_EventGetLastErrorDesc = (IF_EventGetLastErrorDesc)::GetProcAddress(gd_dll, "IF_EventGetLastErrorDesc");
+	fn_EventGetComponentStatus = (IF_EventGetComponentStatus)::GetProcAddress(gd_dll, "IF_EventGetComponentStatus");
+	fn_EventDealStart = (IF_EventDealStart)::GetProcAddress(gd_dll, "IF_EventDealStart");
+	fn_EventCheckVehQueue = (IF_EventCheckVehQueue)::GetProcAddress(gd_dll, "IF_EventCheckVehQueue");
+	fn_EventCheckVehInfo = (IF_EventCheckVehInfo)::GetProcAddress(gd_dll, "IF_EventCheckVehInfo");
+	fn_EventCheckEntryInfo = (IF_EventCheckEntryInfo)::GetProcAddress(gd_dll, "IF_EventCheckEntryInfo");
+	fn_EventShowFeeInfo = (IF_EventShowFeeInfo)::GetProcAddress(gd_dll, "IF_EventShowFeeInfo");
+	fn_EventPayResultDisplay = (IF_EventPayResultDisplay)::GetProcAddress(gd_dll, "IF_EventPayResultDisplay");
+	fn_EventDealStop = (IF_EventDealStop)::GetProcAddress(gd_dll, "IF_EventDealStop");
+	fn_EventStartScan = (IF_EventStartScan)::GetProcAddress(gd_dll, "IF_EventStartScan");
+	fn_EventStopScan = (IF_EventStopScan)::GetProcAddress(gd_dll, "IF_EventStopScan");
+	fn_EventCardOperationNotify = (IF_EventCardOperationNotify)::GetProcAddress(gd_dll, "IF_EventCardOperationNotify");
+	fn_EventModifyVehQueue = (IF_EventModifyVehQueue)::GetProcAddress(gd_dll, "IF_EventModifyVehQueue");
+	fn_EventFeeAuthorize = (IF_EventFeeAuthorize)::GetProcAddress(gd_dll, "IF_EventFeeAuthorize");
+	fn_EventAuthorize = (IF_EventAuthorize)::GetProcAddress(gd_dll, "IF_EventAuthorize");
+	fn_EventDelVehQueueResult = (IF_EventDelVehQueueResult)::GetProcAddress(gd_dll, "IF_EventDelVehQueueResult");
+	fn_EventFreeVoicePlay = (IF_EventFreeVoicePlay)::GetProcAddress(gd_dll, "IF_EventFreeVoicePlay");
+
+	if (fn_EventInitEnvironment3 == NULL ||
+		fn_EventDestroy == NULL ||
+		fn_EventGetLastErrorDesc == NULL ||
+		fn_EventGetComponentStatus == NULL ||
+		fn_EventDealStart == NULL ||
+		fn_EventCheckVehQueue == NULL ||
+		fn_EventCheckVehInfo == NULL ||
+		fn_EventCheckEntryInfo == NULL ||
+		fn_EventShowFeeInfo == NULL ||
+		fn_EventPayResultDisplay == NULL ||
+		fn_EventDealStop == NULL ||
+		fn_EventStartScan == NULL ||
+		fn_EventStopScan == NULL ||
+		fn_EventCardOperationNotify == NULL ||
+		fn_EventModifyVehQueue == NULL ||
+		fn_EventFeeAuthorize == NULL ||
+		fn_EventAuthorize == NULL ||
+		fn_EventDelVehQueueResult == NULL ||
+		fn_EventFreeVoicePlay == NULL ||
+
+		fn_InitEnvironment == NULL ||
+		fn_InitEnvironment3 == NULL ||
 		fn_Destroy == NULL ||
 		fn_GetLastErrorDesc == NULL ||
 		fn_StartGetAccountInfo == NULL ||
@@ -1762,24 +1906,27 @@ void CTestToolDlg::OnBnClickedButtonLoaddll()
 	case SiChuan:
 		log("加载四川移动支付中间件！！！");
 		break;
+	case ShanXi:
+		loadShanXiDll();
+		break;
 	default:
 		break;
 	}
 
-	switch (m_enMidllewareType)
-	{
-	case BaseNoEvent:
-		loadDll();
-		break;
-	case BaseAndEvent:
-		loadDllEvent();
-		break;
-	case RobotNoEvent:
-		loadDllRobot();
-		break;
-	default:
-		break;
-	}
+	//switch (m_enMidllewareType)
+	//{
+	//case BaseNoEvent:
+	//	loadDll();
+	//	break;
+	//case BaseAndEvent:
+	//	loadDllEvent();
+	//	break;
+	//case RobotNoEvent:
+	//	loadDllRobot();
+	//	break;
+	//default:
+	//	break;
+	//}
 }
 
 
@@ -1813,7 +1960,19 @@ void CTestToolDlg::OnBnClickedButtonInitnetpayenv()
 	bool bRet = false;
 
 	//线程接收应答
-	bRet = fn_InitEnvironment(ReceiveMsgThreadID, 0, WM_THREAD_NETPAY_MESSAGE_SHOWLOG, strAreaInfo, strStationInfo, strLaneInfo, strServerInfo, g_DevIFDlg->m_iProvinceID);
+	switch (m_enCurProvince)
+	{
+	case Jiangxi:
+	case HeNan:
+	case SiChuan:
+		bRet = fn_InitEnvironment(ReceiveMsgThreadID, 0, WM_THREAD_NETPAY_MESSAGE_SHOWLOG, strAreaInfo, strStationInfo, strLaneInfo, strServerInfo, g_DevIFDlg->m_iProvinceID);
+		break;
+	case ShanXi:
+	case HuNan:
+		bRet = fn_InitEnvironment3(0, 0, NULL, NULL, NULL, NULL, 41, NULL, MyNetPayCallBackFun);
+		break;
+	}
+
 	if (bRet == false)
 	{
 		log(_T("TWSDNetPay.dll-----移动支付环境初始化失败！"));
@@ -1941,7 +2100,7 @@ void CTestToolDlg::OnBnClickedBtnInitenv()
 	if (!loadDllSucceed())
 		return;
 
-	if (initEtcEventEnvSucceed())
+	if (m_bEtcEventEnvInitedFlag)
 	{
 		log(_T("EtcEvent环境已初始化成功，请不要重复初始化!"));
 		return;

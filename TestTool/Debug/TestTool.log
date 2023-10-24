@@ -1,7 +1,23 @@
-﻿生成启动时间为 2023/10/16 17:52:40。
+﻿生成启动时间为 2023/10/17 17:39:44。
      1>项目“D:\WorkSpace\middleware_pro\TestTool_Middleware\TestTool_Middleware\TestTool\TestTool.vcxproj”在节点 2 上(Build 个目标)。
-     1>ResourceCompile:
-         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\bin\rc.exe /D _DEBUG /D _USING_V110_SDK71_ /D _AFXDLL /l"0x0804" /IDebug\ /nologo /fo"Debug\TestTool.res" TestTool.rc 
+     1>ClCompile:
+         D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _USING_V110_SDK71_ /D _MBCS /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\TestTool.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt TestToolDlg.cpp
+         TestToolDlg.cpp
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(311): warning C4129: “%”: 不可识别的字符转义序列
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(363): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(364): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(365): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(366): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(367): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(368): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(369): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(370): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(371): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(372): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(373): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(374): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(375): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
+     1>d:\workspace\middleware_pro\testtool_middleware\testtool_middleware\testtool\testtooldlg.cpp(380): warning C4554: “|”: 检查运算符优先级可能存在的错误；使用圆括号阐明优先级
        Link:
          D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"../bin\TestTool.exe" /INCREMENTAL /NOLOGO /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"../bin\TestTool.pdb" /SUBSYSTEM:WINDOWS,"5.01" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"../bin\TestTool.lib" /MACHINE:X86 Debug\TestTool.res
          Debug\CodeConv.obj
@@ -26,4 +42,4 @@
 
 生成成功。
 
-已用时间 00:00:00.74
+已用时间 00:00:00.91

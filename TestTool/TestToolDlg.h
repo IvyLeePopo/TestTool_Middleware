@@ -23,12 +23,16 @@ enum PROVINCE_TYPE
 	Jiangxi = 1,
 	HeNan = 2,
 	SiChuan = 3,
+	ShanXi = 4,
+	HuNan = 5,
 };
 
 
 // TWSDNetPay_V2.1.dll
-//初始化组件环境					-- 接口1
+//初始化组件环境1					-- 接口1
 typedef bool  (WINAPI  *defIF_InitEnvironment)(IN const UINT& nThreadID, IN const HWND& hWnd, IN const unsigned int& nNotifyMsgID, IN const char* szAreaInfo, IN const char* szLoaclStationID, IN const char* szLoaclLaneID, IN const char* szServerInfo, IN const int& iProvinceID);
+//初始化组件环境接口3
+typedef bool (WINAPI *defIF_InitEnvironment3)(IN const UINT& nThreadID, IN const HWND& hWnd, IN const char* szAreaInfo, IN const char* szLoaclStation, IN const char* szLoaclLaneID, IN const char* szServerInfo, IN const int& iProvinceID, IN OUT void* pIndPtr, void(*fun)(int option, int result, void* pIndPtr));
 //清理资源							-- 接口2
 typedef bool  (WINAPI *defIF_Destroy)(void);
 //获取移动支付的上次错误信息		-- 接口3
@@ -136,6 +140,8 @@ private:
 	void loadDll();//普通不带特情的中间件
 	void loadDllEvent();//带特情处理的中间件
 	void loadDllRobot();//卡机的移动支付
+	void loadShanXiDll();//四川的移动支付
+
 	bool loadDllSucceed();//加载中间件是否成功
 	bool initNetPayEnvSucceed();//初始化移动支付是否成功
 	bool initEtcEventEnvSucceed();//初始化特情环境是否成功
@@ -167,6 +173,7 @@ private:
 	void GuiPlay3CheckEntryInfoNone();
 	void GuiPlayXEventstop();
 
+	void test();
 
 private:
 	CEdit edt_info;
@@ -198,6 +205,7 @@ private:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	defIF_InitEnvironment			fn_InitEnvironment;
+	defIF_InitEnvironment3			fn_InitEnvironment3;
 	defIF_Destroy					fn_Destroy;
 	defIF_GetLastErrorDesc			fn_GetLastErrorDesc;
 	defIF_StartGetAccountInfo	    fn_StartGetAccountInfo;
