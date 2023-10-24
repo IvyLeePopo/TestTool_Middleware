@@ -7,24 +7,16 @@
 #include <string>
 #include "ThreadReceiveRespMsg.h"
 
-#define ROOT_PAY 1 //卡机的移动支付
-
-//中间件的类型
-enum MIDLLEWARE_TYPE
-{
-	BaseNoEvent = 1,//普通不带特情的中间件
-	BaseAndEvent = 2,//带特情处理的中间件
-	RobotNoEvent = 3,//卡机不带特情的中间件
-};
-
-//省份的
+//省份的（同一个省份也可能有多个版本）
 enum PROVINCE_TYPE
 {
-	Jiangxi = 1,
-	HeNan = 2,
-	SiChuan = 3,
-	ShanXi = 4,
-	HuNan = 5,
+	ERR = 0,
+	Jiangxi = 1,	//无特情
+	HeNan,			//有特情
+	ShanXi,			//有特情
+	SiChuan,		//四川无特情
+	SiChuan_Event,	//四川有特情
+	HuNan,
 };
 
 
@@ -139,8 +131,11 @@ public:
 private:
 	void loadDll();//普通不带特情的中间件
 	void loadDllEvent();//带特情处理的中间件
-	void loadDllRobot();//卡机的移动支付
-	void loadShanXiDll();//四川的移动支付
+
+	void loadSiChuanDll_Robot();//卡机的移动支付（四川的移动支付也是一样的）//没有特情的
+	void loadSiChuanDll_Event();//四川带特情处理的中间件（TR200换成TR600，添加特情）
+
+	void loadShanXiDll();//山西的移动支付
 
 	bool loadDllSucceed();//加载中间件是否成功
 	bool initNetPayEnvSucceed();//初始化移动支付是否成功
@@ -174,6 +169,7 @@ private:
 	void GuiPlayXEventstop();
 
 	void test();
+	bool bHaveEvent(); //判断该中间件是否有特情业务
 
 private:
 	CEdit edt_info;
@@ -297,7 +293,6 @@ private:
 	bool m_bThreadTotalRunning;
 
 	PROVINCE_TYPE m_enCurProvince;
-	MIDLLEWARE_TYPE m_enMidllewareType;
 
 public:
 	afx_msg LRESULT OnMsgShowEtcEventLog(WPARAM wParam, LPARAM lParam);  //回调函数调用
