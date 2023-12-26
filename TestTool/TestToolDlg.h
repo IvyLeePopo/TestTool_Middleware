@@ -11,16 +11,16 @@
 enum PROVINCE_TYPE
 {
 	ERR = 0,
-	Jiangxi = 1,	//无特情
-	HeNan,			//有特情
-	ShanXi,			//有特情
+	Jiangxi = 1,	//江西无特情
+	HeNan,			//河南有特情
+	ShanXi,			//山西有特情
 	SiChuan,		//四川无特情
 	SiChuan_Event,	//四川有特情
 	HuNan,
 };
 
 
-// TWSDNetPay_V2.1.dll
+// TWSDNetPay.dll
 //初始化组件环境1					-- 接口1
 typedef bool  (WINAPI  *defIF_InitEnvironment)(IN const UINT& nThreadID, IN const HWND& hWnd, IN const unsigned int& nNotifyMsgID, IN const char* szAreaInfo, IN const char* szLoaclStationID, IN const char* szLoaclLaneID, IN const char* szServerInfo, IN const int& iProvinceID);
 //初始化组件环境接口3
@@ -129,8 +129,7 @@ public:
 	CThreadReceiveRespMsg *pThreadReceiveMsgV15;
 
 private:
-	void loadDll();//普通不带特情的中间件
-	void loadDllEvent();//带特情处理的中间件
+	void loadDll();
 
 	void loadSiChuanDll_Robot();//卡机的移动支付（四川的移动支付也是一样的）//没有特情的
 	void loadSiChuanDll_Event();//四川带特情处理的中间件（TR200换成TR600，添加特情）
@@ -179,44 +178,44 @@ private:
 	bool m_bEtcEventEnvInitedFlag;//初始化特情环境
 
 	///////////////////////// 特情相关//////////////////////////////////////////////////////////////////
-	IF_EventInitEnvironment3		fn_EventInitEnvironment3;
-	IF_EventDestroy					fn_EventDestroy;
-	IF_EventGetLastErrorDesc		fn_EventGetLastErrorDesc;
-	IF_EventGetComponentStatus		fn_EventGetComponentStatus;
-	IF_EventDealStart				fn_EventDealStart;
-	IF_EventCheckVehQueue			fn_EventCheckVehQueue;
-	IF_EventCheckVehInfo			fn_EventCheckVehInfo;
-	IF_EventCheckEntryInfo			fn_EventCheckEntryInfo;
-	IF_EventShowFeeInfo				fn_EventShowFeeInfo;
-	IF_EventPayResultDisplay		fn_EventPayResultDisplay;
-	IF_EventDealStop				fn_EventDealStop;
-	IF_EventCardOperationNotify		fn_EventCardOperationNotify;
-	IF_EventModifyVehQueue			fn_EventModifyVehQueue;
-	IF_EventStartScan				fn_EventStartScan;
-	IF_EventStopScan				fn_EventStopScan;
-	IF_EventFeeAuthorize			fn_EventFeeAuthorize;
-	IF_EventAuthorize				fn_EventAuthorize;
-	IF_EventDelVehQueueResult		fn_EventDelVehQueueResult;
-	IF_EventFreeVoicePlay			fn_EventFreeVoicePlay;
+	IF_EventInitEnvironment3		fn_EventInitEnvironment3 = NULL;
+	IF_EventDestroy					fn_EventDestroy = NULL;
+	IF_EventGetLastErrorDesc		fn_EventGetLastErrorDesc = NULL;
+	IF_EventGetComponentStatus		fn_EventGetComponentStatus = NULL;
+	IF_EventDealStart				fn_EventDealStart = NULL;
+	IF_EventCheckVehQueue			fn_EventCheckVehQueue = NULL;
+	IF_EventCheckVehInfo			fn_EventCheckVehInfo = NULL;
+	IF_EventCheckEntryInfo			fn_EventCheckEntryInfo = NULL;
+	IF_EventShowFeeInfo				fn_EventShowFeeInfo = NULL;
+	IF_EventPayResultDisplay		fn_EventPayResultDisplay = NULL;
+	IF_EventDealStop				fn_EventDealStop = NULL;
+	IF_EventCardOperationNotify		fn_EventCardOperationNotify = NULL;
+	IF_EventModifyVehQueue			fn_EventModifyVehQueue = NULL;
+	IF_EventStartScan				fn_EventStartScan = NULL;
+	IF_EventStopScan				fn_EventStopScan = NULL;
+	IF_EventFeeAuthorize			fn_EventFeeAuthorize = NULL;
+	IF_EventAuthorize				fn_EventAuthorize = NULL;
+	IF_EventDelVehQueueResult		fn_EventDelVehQueueResult = NULL;
+	IF_EventFreeVoicePlay			fn_EventFreeVoicePlay = NULL;
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	defIF_InitEnvironment			fn_InitEnvironment;
-	defIF_InitEnvironment3			fn_InitEnvironment3;
-	defIF_Destroy					fn_Destroy;
-	defIF_GetLastErrorDesc			fn_GetLastErrorDesc;
-	defIF_StartGetAccountInfo	    fn_StartGetAccountInfo;
-	defIF_StopGetAccountInfo	    fn_StopGetAccountInfo;
-	defIF_GetAccountInfo			fn_GetAccountInfo;
-	defIF_DebitMoney				fn_DebitMoney;
-	defIF_DebitCancel				fn_DebitCancel;
-	defIF_GetDebitResult			fn_GetDebitResult;
-	defIF_SetMMI					fn_SetMMI;
-	defIF_GetParam					fn_GetParam;
-	defIF_GetComponentStatus		fn_GetComponentStatus;
-	defIF_TranslateData				fn_TranslateData;
+	defIF_InitEnvironment			fn_InitEnvironment = NULL;
+	defIF_InitEnvironment3			fn_InitEnvironment3 = NULL;
+	defIF_Destroy					fn_Destroy = NULL;
+	defIF_GetLastErrorDesc			fn_GetLastErrorDesc = NULL;
+	defIF_StartGetAccountInfo	    fn_StartGetAccountInfo = NULL;
+	defIF_StopGetAccountInfo	    fn_StopGetAccountInfo = NULL;
+	defIF_GetAccountInfo			fn_GetAccountInfo = NULL;
+	defIF_DebitMoney				fn_DebitMoney = NULL;
+	defIF_DebitCancel				fn_DebitCancel = NULL;
+	defIF_GetDebitResult			fn_GetDebitResult = NULL;
+	defIF_SetMMI					fn_SetMMI = NULL;
+	defIF_GetParam					fn_GetParam = NULL;
+	defIF_GetComponentStatus		fn_GetComponentStatus = NULL;
+	defIF_TranslateData				fn_TranslateData = NULL;
 
 	//江西
-	defIF_AsyncExecCmd				fn_AsyncExecCmd;
+	defIF_AsyncExecCmd				fn_AsyncExecCmd = NULL;
 
 	/**************************移动支付信息**********************************************/
 
@@ -244,6 +243,16 @@ private:
 	//车道编码
 	int		m_iLaneID;
 	CString m_strLaneID;
+
+	/*  协议类型：
+		1.5版本中间件目前在用省份：河南、四川、天津；
+		2.0版本中间件目前在用省份：广东、湖南、江西；
+	*/
+	int		m_iProtocal;
+
+	// 是否有特情相关的处理：1-有，0-无
+	WORD	m_iEvent;
+
 
 	//UI扣款信息
 	int m_iDebitMoney;

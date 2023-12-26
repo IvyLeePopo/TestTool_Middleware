@@ -1,0 +1,26 @@
+2023-12-25 17:17:35.174:构造 CommonFrameMain
+2023-12-25 17:17:35.177:begin load lib
+2023-12-25 17:17:35.179:读取文件配置
+2023-12-25 17:17:35.179:d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\filepathconfig.txt
+2023-12-25 17:17:35.179:配置文件内容
+2023-12-25 17:17:35.179:{
+	"TWSDNetPayCore.dll":"TWSDNetPayCore.dll",
+    "TWUpdateCore.dll":"TWUpdateCore.dll"
+}
+
+2023-12-25 17:17:35.180:配置解析成功
+2023-12-25 17:17:35.184:加载d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\twsdnetpaycore.dll失败
+2023-12-25 17:17:35.188:加载d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\twupdatecore.dll成功
+2023-12-25 17:19:04.138:构造 CommonFrameMain
+2023-12-25 17:19:04.141:begin load lib
+2023-12-25 17:19:04.141:读取文件配置
+2023-12-25 17:19:04.141:d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\filepathconfig.txt
+2023-12-25 17:19:04.141:配置文件内容
+2023-12-25 17:19:04.141:{
+	"TWSDNetPayCore.dll":"TWSDNetPayCore.dll",
+    "TWUpdateCore.dll":"TWUpdateCore.dll"
+}
+
+2023-12-25 17:19:04.141:配置解析成功
+2023-12-25 17:19:04.183:加载d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\twsdnetpaycore.dll成功
+2023-12-25 17:19:04.187:加载d:\workspace\workproject\middleware_pro\testtool_middleware\testtool_middleware\bin\twupdatecore.dll成功

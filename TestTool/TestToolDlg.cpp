@@ -76,7 +76,9 @@ CTestToolDlg::CTestToolDlg(CWnd* pParent /*=NULL*/)
 	m_bLoaded = false;
 	ReceiveMsgThreadID = 0;
 
-	m_enCurProvince = PROVINCE_TYPE::ShanXi;
+	m_enCurProvince = PROVINCE_TYPE::ERR;
+	m_iProtocal = 15;   // 默认1.5的协议
+	m_iEvent = 0;       // 默认没有特情相关的处理
 
 	m_pGuiPlay1Thread = NULL;
 	m_pGuiPlay2Thread = NULL;
@@ -208,6 +210,8 @@ BOOL CTestToolDlg::OnInitDialog()
 	m_strServerIP.Format(_T("%s"), szIP);
 	m_wServerPort = (WORD)::GetPrivateProfileInt(_T("ReflectWeb"), _T("Port"), 8081, strCfgFilePath);
 
+	//m_iEvent = (WORD)::GetPrivateProfileInt(_T("ReflectWeb"), _T("Event"), 0, strCfgFilePath);
+
 	//读取测试工具的配置信息
 	strCfgFilePath.Format(_T("%s\\TWNetPayTest.ini"), theApp.m_strCommDir);
 	m_iProvinceID = ::GetPrivateProfileInt(_T("Setup"), _T("ProvinceID"), 44, strCfgFilePath);
@@ -241,9 +245,13 @@ BOOL CTestToolDlg::OnInitDialog()
 
 	CString strCfgInfo;
 	strCfgInfo.Format(_T("ProvinceID: %s, AreaID: %s, RoadID: %s, StationID: %s, LaneID: %s"), m_strProvinceID, m_strAreaID, m_strRoadID, m_strStationID, m_strLaneID);
-	//DisplayInfo(strCfgInfo);
 	log(strCfgInfo.GetBuffer(0));
 
+	m_iProtocal = ::GetPrivateProfileIntA(_T("Type"), _T("ProtocolType"), 15, strCfgFilePath);
+	m_iEvent = (WORD)::GetPrivateProfileInt(_T("Type"), _T("Event"), 0, strCfgFilePath);
+	strCfgInfo.Format(_T("中间件动态库的类型：%s 协议, %s特情"), 15 == m_iProtocal ? "1.5" : "2.0", m_iEvent ? "有" : "无");
+
+	log(strCfgInfo.GetBuffer(0));
 	m_bNetPayEnvInitedFlag = false;
 	m_bEtcEventEnvInitedFlag = false;
 
@@ -321,115 +329,8 @@ void CTestToolDlg::log(std::string str)
 	edt_info.LineScroll(edt_info.GetLineCount(), 0);
 }
 
-
 void CTestToolDlg::loadDll()
 {
-	log("开始加载TWSDNetPay.dll库...（基础没有特情处理）\n");
-
-	fn_EventInitEnvironment3 = NULL;
-
-	fn_InitEnvironment = NULL;
-	fn_Destroy = NULL;
-	fn_GetLastErrorDesc = NULL;
-	fn_StartGetAccountInfo = NULL;
-	fn_StopGetAccountInfo = NULL;
-	fn_GetAccountInfo = NULL;
-	fn_DebitMoney = NULL;
-	fn_DebitCancel = NULL;
-	fn_GetDebitResult = NULL;
-	fn_SetMMI = NULL;
-	fn_GetParam = NULL;
-	fn_GetComponentStatus = NULL;
-	fn_TranslateData = NULL;
-
-	gd_dll = ::LoadLibraryA("TWSDNetPay.dll");
-
-	if (gd_dll == NULL)
-	{
-		log("load TWSDNetPay.dll失败!!! \n");
-		return;
-	}
-
-	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
-	fn_Destroy = (defIF_Destroy)::GetProcAddress(gd_dll, "IF_Destroy");
-	fn_GetLastErrorDesc = (defIF_GetLastErrorDesc)::GetProcAddress(gd_dll, "IF_GetLastErrorDesc");
-	fn_StartGetAccountInfo = (defIF_StartGetAccountInfo)::GetProcAddress(gd_dll, "IF_StartGetAccountInfo");
-	fn_StopGetAccountInfo = (defIF_StopGetAccountInfo)::GetProcAddress(gd_dll, "IF_StopGetAccountInfo");
-	fn_GetAccountInfo = (defIF_GetAccountInfo)::GetProcAddress(gd_dll, "IF_GetAccountInfo");
-	fn_DebitMoney = (defIF_DebitMoney)::GetProcAddress(gd_dll, "IF_DebitMoney");
-	fn_DebitCancel = (defIF_DebitCancel)::GetProcAddress(gd_dll, "IF_DebitCancel");
-	fn_GetDebitResult = (defIF_GetDebitResult)::GetProcAddress(gd_dll, "IF_GetDebitResult");
-	fn_SetMMI = (defIF_SetMMI)::GetProcAddress(gd_dll, "IF_SetMMI");
-	fn_GetParam = (defIF_GetParam)::GetProcAddress(gd_dll, "IF_GetParam");
-	fn_GetComponentStatus = (defIF_GetComponentStatus)::GetProcAddress(gd_dll, "IF_GetComponentStatus");
-	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
-
-	// 特情相关
-	fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
-
-	m_bLoaded = (fn_InitEnvironment != NULL) |
-		(fn_Destroy != NULL) |
-		(fn_GetLastErrorDesc != NULL) |
-		(fn_StartGetAccountInfo != NULL) |
-		(fn_StopGetAccountInfo != NULL) |
-		(fn_GetAccountInfo != NULL) |
-		(fn_DebitMoney != NULL) |
-		(fn_DebitCancel != NULL) |
-		(fn_GetDebitResult != NULL) |
-		(fn_SetMMI != NULL) |
-		(fn_GetParam != NULL) |
-		(fn_GetComponentStatus != NULL) |
-		(fn_TranslateData != NULL) |
-		(fn_EventInitEnvironment3 != NULL);
-
-	if (m_enCurProvince == PROVINCE_TYPE::Jiangxi)
-	{
-		fn_AsyncExecCmd = (defIF_AsyncExecCmd)::GetProcAddress(gd_dll, "IF_AsyncExecCmd");
-		m_bLoaded = m_bLoaded | fn_AsyncExecCmd != NULL;
-	}
-
-	m_bLoaded ? log("加载TWSDNetPay.dll成功! \n") : log("加载TWSDNetPay.dll失败!!! \n");
-}
-
-void CTestToolDlg::loadDllEvent()
-{
-	log("开始加载TWSDNetPay.dll库...（基础+特情处理）\n");
-
-	fn_InitEnvironment = NULL;
-	fn_InitEnvironment3 = NULL;
-	fn_Destroy = NULL;
-	fn_GetLastErrorDesc = NULL;
-	fn_StartGetAccountInfo = NULL;
-	fn_StopGetAccountInfo = NULL;
-	fn_GetAccountInfo = NULL;
-	fn_DebitMoney = NULL;
-	fn_DebitCancel = NULL;
-	fn_GetDebitResult = NULL;
-	fn_SetMMI = NULL;
-	fn_GetParam = NULL;
-	fn_GetComponentStatus = NULL;
-	fn_TranslateData = NULL;
-
-	fn_EventInitEnvironment3 = NULL;
-	fn_EventDestroy = NULL;
-	fn_EventGetLastErrorDesc = NULL;
-	fn_EventGetComponentStatus = NULL;
-	fn_EventDealStart = NULL;
-	fn_EventCheckVehQueue = NULL;
-	fn_EventCheckVehInfo = NULL;
-	fn_EventCheckEntryInfo = NULL;
-	fn_EventShowFeeInfo = NULL;
-	fn_EventPayResultDisplay = NULL;
-	fn_EventDealStop = NULL;
-	fn_EventStartScan = NULL;
-	fn_EventStopScan = NULL;
-	fn_EventCardOperationNotify = NULL;
-	fn_EventModifyVehQueue = NULL;
-	fn_EventFeeAuthorize = NULL;
-	fn_EventAuthorize = NULL;
-	fn_EventDelVehQueueResult = NULL;
-	fn_EventFreeVoicePlay = NULL;
-
 	gd_dll = ::LoadLibraryA("TWSDNetPay.dll");
 
 	if (gd_dll == NULL)
@@ -437,7 +338,6 @@ void CTestToolDlg::loadDllEvent()
 		log("load TWSDNetPay.dll fail!!! \n");
 		return;
 	}
-
 
 	// 中间业务库
 	fn_InitEnvironment = (defIF_InitEnvironment)::GetProcAddress(gd_dll, "IF_InitEnvironment");
@@ -455,48 +355,10 @@ void CTestToolDlg::loadDllEvent()
 	fn_GetComponentStatus = (defIF_GetComponentStatus)::GetProcAddress(gd_dll, "IF_GetComponentStatus");
 	fn_TranslateData = (defIF_TranslateData)::GetProcAddress(gd_dll, "IF_TranslateData");
 
-	// 特情相关
-	fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
-	fn_EventDestroy = (IF_EventDestroy)::GetProcAddress(gd_dll, "IF_EventDestroy");
-	fn_EventGetLastErrorDesc = (IF_EventGetLastErrorDesc)::GetProcAddress(gd_dll, "IF_EventGetLastErrorDesc");
-	fn_EventGetComponentStatus = (IF_EventGetComponentStatus)::GetProcAddress(gd_dll, "IF_EventGetComponentStatus");
-	fn_EventDealStart = (IF_EventDealStart)::GetProcAddress(gd_dll, "IF_EventDealStart");
-	fn_EventCheckVehQueue = (IF_EventCheckVehQueue)::GetProcAddress(gd_dll, "IF_EventCheckVehQueue");
-	fn_EventCheckVehInfo = (IF_EventCheckVehInfo)::GetProcAddress(gd_dll, "IF_EventCheckVehInfo");
-	fn_EventCheckEntryInfo = (IF_EventCheckEntryInfo)::GetProcAddress(gd_dll, "IF_EventCheckEntryInfo");
-	fn_EventShowFeeInfo = (IF_EventShowFeeInfo)::GetProcAddress(gd_dll, "IF_EventShowFeeInfo");
-	fn_EventPayResultDisplay = (IF_EventPayResultDisplay)::GetProcAddress(gd_dll, "IF_EventPayResultDisplay");
-	fn_EventDealStop = (IF_EventDealStop)::GetProcAddress(gd_dll, "IF_EventDealStop");
-	fn_EventStartScan = (IF_EventStartScan)::GetProcAddress(gd_dll, "IF_EventStartScan");
-	fn_EventStopScan = (IF_EventStopScan)::GetProcAddress(gd_dll, "IF_EventStopScan");
-	fn_EventCardOperationNotify = (IF_EventCardOperationNotify)::GetProcAddress(gd_dll, "IF_EventCardOperationNotify");
-	fn_EventModifyVehQueue = (IF_EventModifyVehQueue)::GetProcAddress(gd_dll, "IF_EventModifyVehQueue");
-	fn_EventFeeAuthorize = (IF_EventFeeAuthorize)::GetProcAddress(gd_dll, "IF_EventFeeAuthorize");
-	fn_EventAuthorize = (IF_EventAuthorize)::GetProcAddress(gd_dll, "IF_EventAuthorize");
-	fn_EventDelVehQueueResult = (IF_EventDelVehQueueResult)::GetProcAddress(gd_dll, "IF_EventDelVehQueueResult");
-	//fn_EventFreeVoicePlay = (IF_EventFreeVoicePlay)::GetProcAddress(gd_dll, "IF_EventFreeVoicePlay");
 
-	if (fn_EventInitEnvironment3 == NULL ||
-		fn_EventDestroy == NULL ||
-		fn_EventGetLastErrorDesc == NULL ||
-		fn_EventGetComponentStatus == NULL ||
-		fn_EventDealStart == NULL ||
-		fn_EventCheckVehQueue == NULL ||
-		fn_EventCheckVehInfo == NULL ||
-		fn_EventCheckEntryInfo == NULL ||
-		fn_EventShowFeeInfo == NULL ||
-		fn_EventPayResultDisplay == NULL ||
-		fn_EventDealStop == NULL ||
-		fn_EventStartScan == NULL ||
-		fn_EventStopScan == NULL ||
-		fn_EventCardOperationNotify == NULL ||
-		fn_EventModifyVehQueue == NULL ||
-		fn_EventFeeAuthorize == NULL ||
-		fn_EventAuthorize == NULL ||
-		fn_EventDelVehQueueResult == NULL ||
-		//fn_EventFreeVoicePlay == NULL ||
-
+	if (
 		fn_InitEnvironment == NULL ||
+		fn_InitEnvironment3 == NULL ||
 		fn_Destroy == NULL ||
 		fn_GetLastErrorDesc == NULL ||
 		fn_StartGetAccountInfo == NULL ||
@@ -511,10 +373,57 @@ void CTestToolDlg::loadDllEvent()
 		fn_GetComponentStatus == NULL ||
 		fn_TranslateData == NULL)
 	{
-
 		log("加载TWSDNetPay.dll失败!!! \n");
 		return;
 	}
+
+	if (1 == m_iEvent)
+	{
+		// 特情相关
+		fn_EventInitEnvironment3 = (IF_EventInitEnvironment3)::GetProcAddress(gd_dll, "IF_EventInitEnvironment3");
+		fn_EventDestroy = (IF_EventDestroy)::GetProcAddress(gd_dll, "IF_EventDestroy");
+		fn_EventGetLastErrorDesc = (IF_EventGetLastErrorDesc)::GetProcAddress(gd_dll, "IF_EventGetLastErrorDesc");
+		fn_EventGetComponentStatus = (IF_EventGetComponentStatus)::GetProcAddress(gd_dll, "IF_EventGetComponentStatus");
+		fn_EventDealStart = (IF_EventDealStart)::GetProcAddress(gd_dll, "IF_EventDealStart");
+		fn_EventCheckVehQueue = (IF_EventCheckVehQueue)::GetProcAddress(gd_dll, "IF_EventCheckVehQueue");
+		fn_EventCheckVehInfo = (IF_EventCheckVehInfo)::GetProcAddress(gd_dll, "IF_EventCheckVehInfo");
+		fn_EventCheckEntryInfo = (IF_EventCheckEntryInfo)::GetProcAddress(gd_dll, "IF_EventCheckEntryInfo");
+		fn_EventShowFeeInfo = (IF_EventShowFeeInfo)::GetProcAddress(gd_dll, "IF_EventShowFeeInfo");
+		fn_EventPayResultDisplay = (IF_EventPayResultDisplay)::GetProcAddress(gd_dll, "IF_EventPayResultDisplay");
+		fn_EventDealStop = (IF_EventDealStop)::GetProcAddress(gd_dll, "IF_EventDealStop");
+		fn_EventStartScan = (IF_EventStartScan)::GetProcAddress(gd_dll, "IF_EventStartScan");
+		fn_EventStopScan = (IF_EventStopScan)::GetProcAddress(gd_dll, "IF_EventStopScan");
+		fn_EventCardOperationNotify = (IF_EventCardOperationNotify)::GetProcAddress(gd_dll, "IF_EventCardOperationNotify");
+		fn_EventModifyVehQueue = (IF_EventModifyVehQueue)::GetProcAddress(gd_dll, "IF_EventModifyVehQueue");
+		fn_EventFeeAuthorize = (IF_EventFeeAuthorize)::GetProcAddress(gd_dll, "IF_EventFeeAuthorize");
+		fn_EventAuthorize = (IF_EventAuthorize)::GetProcAddress(gd_dll, "IF_EventAuthorize");
+		fn_EventDelVehQueueResult = (IF_EventDelVehQueueResult)::GetProcAddress(gd_dll, "IF_EventDelVehQueueResult");
+
+		if (fn_EventInitEnvironment3 == NULL ||
+			fn_EventDestroy == NULL ||
+			fn_EventGetLastErrorDesc == NULL ||
+			fn_EventGetComponentStatus == NULL ||
+			fn_EventDealStart == NULL ||
+			fn_EventCheckVehQueue == NULL ||
+			fn_EventCheckVehInfo == NULL ||
+			fn_EventCheckEntryInfo == NULL ||
+			fn_EventShowFeeInfo == NULL ||
+			fn_EventPayResultDisplay == NULL ||
+			fn_EventDealStop == NULL ||
+			fn_EventStartScan == NULL ||
+			fn_EventStopScan == NULL ||
+			fn_EventCardOperationNotify == NULL ||
+			fn_EventModifyVehQueue == NULL ||
+			fn_EventFeeAuthorize == NULL ||
+			fn_EventAuthorize == NULL ||
+			fn_EventDelVehQueueResult == NULL)
+		{
+
+			log("加载TWSDNetPay.dll失败!!! \n");
+			return;
+		}
+	}
+
 
 	log("加载TWSDNetPay.dll成功! \n");
 	m_bLoaded = true;
@@ -2031,24 +1940,32 @@ LRESULT CTestToolDlg::OnHWNDMsgShowNetPayResultLog(WPARAM wParam, LPARAM lParam)
 
 void CTestToolDlg::OnBnClickedButtonLoaddll()
 {
-	switch (m_enCurProvince)
-	{
-	case Jiangxi:
-		log("加载江西电子发票中间件！！！");
-		break;
-	case HeNan:
-		log("加载河南移动支付中间件！！！");
-		break;
-	case SiChuan:
-		loadSiChuanDll_Robot();
-		log("加载四川移动支付中间件！！！");
-		break;
-	case ShanXi:
-		loadShanXiDll();
-		break;
-	default:
-		break;
-	}
+
+	CString strCfgInfo;
+	strCfgInfo.Format(_T("开始加载TWSDNetPay.dll库( %s 协议)...\n"), 15 == m_iProtocal ? "1.5" : "2.0");
+	log(strCfgInfo.GetBuffer(0));
+
+	loadDll();
+
+	
+	//switch (m_enCurProvince)
+	//{
+	//case Jiangxi:
+	//	log("加载江西电子发票中间件！！！");
+	//	break;
+	//case HeNan:
+	//	log("加载河南移动支付中间件！！！");
+	//	break;
+	//case SiChuan:
+	//	loadSiChuanDll_Robot();
+	//	log("加载四川移动支付中间件！！！");
+	//	break;
+	//case ShanXi:
+	//	loadShanXiDll();
+	//	break;
+	//default:
+	//	break;
+	//}
 }
 
 
@@ -2082,21 +1999,11 @@ void CTestToolDlg::OnBnClickedButtonInitnetpayenv()
 	bool bRet = false;
 
 	//线程接收应答
-	switch (m_enCurProvince)
-	{
-	case ERR:
-		break;
-	case Jiangxi:
-	case HeNan:
-	case SiChuan:
-	case SiChuan_Event:
+
+	if (0 == m_iEvent)// 湖南、江西、河南、四川
 		bRet = fn_InitEnvironment(ReceiveMsgThreadID, 0, WM_THREAD_NETPAY_MESSAGE_SHOWLOG, strAreaInfo, strStationInfo, strLaneInfo, strServerInfo, g_DevIFDlg->m_iProvinceID);
-		break;
-	case ShanXi:
-	case HuNan:
+	else if (1 == m_iEvent)//山西
 		bRet = fn_InitEnvironment3(0, 0, NULL, NULL, NULL, NULL, 41, NULL, MyNetPayCallBackFun);
-		break;
-	}
 
 	if (bRet == false)
 	{
@@ -2231,6 +2138,12 @@ void CTestToolDlg::OnBnClickedBtnInitenv()
 		return;
 	}
 
+	if (NULL == fn_EventInitEnvironment3)
+	{
+		log(_T("fn_EventInitEnvironment3 该接口为空"));
+		return;
+	}
+
 	//配置信息从配置文件中读取
 	CString	m_strAppDir;
 	m_strAppDir.Format(_T("%s"), GetCurrentDirNew());
@@ -2298,6 +2211,12 @@ void CTestToolDlg::OnBnClickedBtnEventstart()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventDealStart)
+	{
+		log(_T("fn_EventDealStart 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 
@@ -2375,6 +2294,12 @@ void CTestToolDlg::OnBnClickedBtnCheckvehqueue()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventCheckVehQueue)
+	{
+		log(_T("fn_EventCheckVehQueue 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -2441,6 +2366,12 @@ void CTestToolDlg::OnBnClickedBtnCheckvehqueuedel()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventCheckVehQueue)
+	{
+		log(_T("fn_EventCheckVehQueue 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -2499,6 +2430,12 @@ void CTestToolDlg::OnBnClickedBtnCheckvehinfo()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventCheckVehInfo)
+	{
+		log(_T("fn_EventCheckVehInfo 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -2568,6 +2505,12 @@ void CTestToolDlg::OnBnClickedBtnCheckentryinfo()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventCheckEntryInfo)
+	{
+		log(_T("fn_EventCheckEntryInfo 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -2649,6 +2592,12 @@ void CTestToolDlg::OnBnClickedBtnCheckentryinfoNone()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventCheckEntryInfo)
+	{
+		log(_T("fn_EventCheckEntryInfo 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -2712,6 +2661,12 @@ void CTestToolDlg::OnBnClickedBtnShowfeeinfosingle()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventShowFeeInfo)
+	{
+		log(_T("fn_EventShowFeeInfo 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -2807,6 +2762,12 @@ void CTestToolDlg::OnBnClickedBtnShowfeeinfo()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventShowFeeInfo)
+	{
+		log(_T("fn_EventShowFeeInfo 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -2912,6 +2873,12 @@ void CTestToolDlg::OnBnClickedBtnPayresultshow()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventPayResultDisplay)
+	{
+		log(_T("fn_EventPayResultDisplay 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -2965,6 +2932,12 @@ void CTestToolDlg::OnBnClickedBtnPayresultshowfail()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventPayResultDisplay)
+	{
+		log(_T("fn_EventPayResultDisplay 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -3021,6 +2994,12 @@ void CTestToolDlg::OnBnClickedBtnSwipecard()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventCardOperationNotify)
+	{
+		log(_T("fn_EventCardOperationNotify 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -3072,6 +3051,12 @@ void CTestToolDlg::OnBnClickedBtnRwcard()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventCardOperationNotify)
+	{
+		log(_T("fn_EventCardOperationNotify 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -3122,6 +3107,12 @@ void CTestToolDlg::OnBnClickedBtnFixvehqueue()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventModifyVehQueue)
+	{
+		log(_T("fn_EventModifyVehQueue 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -3206,6 +3197,12 @@ void CTestToolDlg::OnBnClickedBtnFeeauthorize()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventFeeAuthorize)
+	{
+		log(_T("fn_EventFeeAuthorize 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -3256,6 +3253,12 @@ void CTestToolDlg::OnBnClickedBtnAuthorize()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventAuthorize)
+	{
+		log(_T("fn_EventAuthorize 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -3314,6 +3317,12 @@ void CTestToolDlg::OnBnClickedBtnDelvehqueueresult()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventDelVehQueueResult)
+	{
+		log(_T("fn_EventDelVehQueueResult 该接口为空"));
+		return;
+	}
+
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
 	{
@@ -3368,6 +3377,12 @@ void CTestToolDlg::OnBnClickedBtnEtcdevstatus()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventGetComponentStatus)
+	{
+		log(_T("fn_EventGetComponentStatus 该接口为空"));
+		return;
+	}
+
 	bool bRet = false;
 	unsigned int uStatus;
 	bRet = fn_EventGetComponentStatus(uStatus);
@@ -3389,6 +3404,12 @@ void CTestToolDlg::OnBnClickedBtnEtcgetlasterrordescrip()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventGetLastErrorDesc)
+	{
+		log(_T("fn_EventGetLastErrorDesc 该接口为空"));
+		return;
+	}
+
 	log("调用接口IF_EventGetLastErrorDesc()");
 	static std::string ErrorDesc;
 	ErrorDesc = fn_EventGetLastErrorDesc();
@@ -3402,6 +3423,12 @@ void CTestToolDlg::OnBnClickedBtnChange2etcmode()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventCardOperationNotify)
+	{
+		log(_T("fn_EventCardOperationNotify 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 
@@ -3441,6 +3468,12 @@ void CTestToolDlg::OnBnClickedBtnEventstop()
 {
 	if (!initEtcEventEnvSucceed())
 		return;
+
+	if (NULL == fn_EventDealStop)
+	{
+		log(_T("fn_EventDealStop 该接口为空"));
+		return;
+	}
 
 	CString strJson;
 	if (((CButton *)GetDlgItem(IDC_RADIO_FreeParam))->GetCheck())
@@ -3512,6 +3545,12 @@ void CTestToolDlg::OnBnClickedBtnDestroyetcevent()
 	if (!initEtcEventEnvSucceed())
 		return;
 
+	if (NULL == fn_EventDestroy)
+	{
+		log(_T("fn_EventDestroy 该接口为空"));
+		return;
+	}
+
 	log("卸载EtcEvent环境接口开始调用");
 	bool bRet = false;
 	bRet = fn_EventDestroy();
@@ -3534,6 +3573,12 @@ void CTestToolDlg::OnBnClickedBtnDestroynetpay()
 
 	if (!initNetPayEnvSucceed())
 		return;
+
+	if (NULL == fn_Destroy)
+	{
+		log(_T("fn_Destroy 该接口为空"));
+		return;
+	}
 
 	log("卸载移动支付环境接口开始调用");
 	bool bRet = false;
@@ -3837,14 +3882,11 @@ void CTestToolDlg::OnBnClickedBtnGuiplaytotalstop()
 void CTestToolDlg::OnBnClickedBtnAsyncexeccmd()
 {
 	// 展示发票二维码
-	if (m_enCurProvince != PROVINCE_TYPE::Jiangxi)
+	if (NULL == fn_AsyncExecCmd)
 	{
-		log("当前的库不是江西的中间件，没有此接口！！！");
+		log(_T("fn_AsyncExecCmd 该接口为空"));
 		return;
 	}
-
-	if (fn_AsyncExecCmd == NULL)
-		return;
 
 	Json::Value InvoiceAsyncExecCmd;
 	InvoiceAsyncExecCmd["CashInvoiceNo"] = Json::Value("33b2b009e44b15");
@@ -3864,14 +3906,11 @@ void CTestToolDlg::OnBnClickedBtnAsyncexeccmd()
 void CTestToolDlg::OnBnClickedBtnClearqrcodecmd()
 {
 	// 清除发票二维码
-	if (m_enCurProvince != PROVINCE_TYPE::Jiangxi)
+	if (NULL == fn_AsyncExecCmd)
 	{
-		log("当前的库不是江西的中间件，没有此接口！！！");
+		log(_T("fn_AsyncExecCmd 该接口为空"));
 		return;
 	}
-
-	if (fn_AsyncExecCmd == NULL)
-		return;
 
 	bool ret = false;
 	//ret = fn_AsyncExecCmd(2002, );
