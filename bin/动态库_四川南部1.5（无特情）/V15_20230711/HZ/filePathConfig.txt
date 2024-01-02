@@ -1,4 +1,0 @@
-{
-	"TWSDNetPayCore.dll":"TWSDNetPayCore.dll",
-    "TWUpdateCore.dll":"TWUpdateCore.dll"
-}
